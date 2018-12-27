@@ -1,6 +1,7 @@
 
 # -*- coding: utf-8 -*-)
 import urllib2
+import requests
 import time
 from bs4 import BeautifulSoup
 import sys
@@ -34,15 +35,25 @@ def _setDNSCache():
 
 def get_article_link(url):
     try:
-        response = urllib2.urlopen(url)
-        res = response.read()
+        #response = urllib2.urlopen(url)
+        #res = response.read()
+        response = requests.get(url)
+        res = response.text
+        print res
     except HTTPError as e:
         content = e.read()
         print('exception:',content)
         print('sleep 10s....')
         time.sleep(10)
-    bsObj = BeautifulSoup(res, 'html.parser')
-    links = bsObj.find_all('a')
+    pos = res.find('Ark.kindTree = ')
+    if( pos != -1):
+        pos = pos + len('Ark.kindTree = ')
+    pos1 = res.find('Ark.kindIdMap')
+
+    json = res[pos:pos1]
+    print json
+    #bsObj = BeautifulSoup(res, 'html.parser')
+    bsObj = BeautifulSoup(res, 'lxml')
     articles = {}
     kind = {}
     max = 0;
@@ -51,8 +62,9 @@ def get_article_link(url):
         #print 'links:',l
         #print 'urls:',urls
         #print 'type(l):',type(l)
-        if( l.find('/ebook/') == 0):
+        if( l.find('/category?kind') == 0):
             articles['https://read.douban.com/'+l]='1'
+            print l
         if( l.find('/kind/0/') == 0 or l.find('/kind/500/') == 0):
             print '跳过全部:',l
             time.sleep(5);
@@ -84,7 +96,9 @@ def get_article_link(url):
 def get_article(url):
 
     try:
-        response = urllib2.urlopen(url)
+        #response = urllib2.urlopen(url)
+        response = requests.get(url)
+        response = response.text
         #res = response.read()
     except HTTPError as e:
         content = e.read()
@@ -208,7 +222,7 @@ def get_kind(kind, kind_title):
             print 'temp:',temp
 
             #防止被封IP
-            stop = random.randint(1, 5)
+            stop = random.randint(1, 10)
             print 'sleep:',stop
             time.sleep(stop)
 
@@ -222,8 +236,8 @@ def get_kind(kind, kind_title):
 
 if __name__ == '__main__':
 
-    url = "https://read.douban.com/kind/532?start=0&sort=hot&promotion_only=False&min_price=None&max_price=None&works_type=None"
-    get_url = "https://read.douban.com/kind/532?start={0:d}&sort=hot&promotion_only=False&min_price=None&max_price=None&works_type=None"
+    url = "https://read.douban.com/category/"
+    get_url = "https://read.douban.com/kind/501?start={0:d}&sort=hot&promotion_only=False&min_price=None&max_price=None&works_type=None"
     
     _setDNSCache()
     links,max, kind_url = get_article_link(url)
